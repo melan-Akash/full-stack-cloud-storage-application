@@ -47,3 +47,5 @@ export function DropdownItem({ children, icon: Icon, onClick, danger = false, di
         </button>
     );
 }
+
+export default Dropdown;

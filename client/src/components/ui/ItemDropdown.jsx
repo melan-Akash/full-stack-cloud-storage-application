@@ -35,3 +35,5 @@ export function ItemDropdown({ item, onPreview, onShare, onRename, onMove, onDel
         </div>
     );
 }
+
+export default ItemDropdown;
