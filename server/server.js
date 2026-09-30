@@ -55,8 +55,12 @@ app.use('/api/trash', trashRoutes)
 app.use('/api/shares', shareRoutes)
 app.use('/api/share', shareRoutes)
 
-// Base Health Route
+// Base Health Routes
 app.get('/', (req, res) => {
+  res.send('Drivea PERN Stack Backend API Running')
+})
+
+app.get('/api', (req, res) => {
   res.send('Drivea PERN Stack Backend API Running')
 })
 
