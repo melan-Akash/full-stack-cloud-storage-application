@@ -6,6 +6,7 @@ const appContext = createContext()
 
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('name_asc')
 
@@ -17,7 +18,10 @@ export const AppProvider = ({ children }) => {
           setUser(data.user)
         }
       } catch (error) {
-        // Not logged in or mock
+        // Not logged in or session expired
+        setUser(null)
+      } finally {
+        setIsAuthLoading(false)
       }
     }
     fetchMe()
@@ -31,6 +35,9 @@ export const AppProvider = ({ children }) => {
     try {
       const response = await requestFn()
       const data = response?.data || response
+      if (data?.token) {
+        localStorage.setItem('drivea_token', data.token)
+      }
       setUser(data.user)
       if (successMessage) {
         toast.success(successMessage)
@@ -61,16 +68,19 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     try {
       await API.post('/api/auth/logout')
+    } catch (error) {
+      // ignore
+    } finally {
+      localStorage.removeItem('drivea_token')
       setUser(null)
       toast.success('Logged out')
-    } catch (error) {
-      toast.error('Logout error')
     }
   }
 
   const value = {
     user,
     setUser,
+    isAuthLoading,
     searchQuery,
     setSearchQuery,
     sortBy,

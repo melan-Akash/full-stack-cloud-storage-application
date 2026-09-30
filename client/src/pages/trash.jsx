@@ -108,7 +108,7 @@ const Trash = () => {
               <div className="space-y-1">
                 <p className="font-medium text-slate-900 text-sm truncate">{item.name}</p>
                 <p className="text-xs text-slate-400">
-                  Deleted: {new Date(item.deletedAt).toLocaleDateString()}
+                  Deleted: {new Date(item.deleted_at || item.deletedAt || item.created_at || Date.now()).toLocaleDateString()}
                 </p>
               </div>
 

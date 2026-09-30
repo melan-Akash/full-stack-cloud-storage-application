@@ -115,7 +115,7 @@ const SharedWithMe = () => {
             <div className="flex justify-between">
               <span className="text-slate-400">Shared Date:</span>
               <span className="font-medium text-slate-800">
-                {new Date(sharedData.createdAt).toLocaleDateString()}
+                {new Date(sharedData.share?.created_at || sharedData.created_at || item?.created_at || Date.now()).toLocaleDateString()}
               </span>
             </div>
           </div>

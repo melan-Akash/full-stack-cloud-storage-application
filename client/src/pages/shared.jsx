@@ -82,7 +82,7 @@ const SharedFiles = () => {
                   <tr key={link.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
                       <Link2 className="w-4 h-4 text-orange-600 shrink-0" />
-                      <span className="truncate max-w-xs">{link.itemName || 'Shared Item'}</span>
+                      <span className="truncate max-w-xs">{link.itemName || link.name || 'Shared Item'}</span>
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
@@ -90,7 +90,7 @@ const SharedFiles = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-500">
-                      {new Date(link.createdAt).toLocaleDateString()}
+                      {new Date(link.created_at || link.createdAt || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

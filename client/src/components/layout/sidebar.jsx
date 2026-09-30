@@ -10,9 +10,9 @@ const Sidebar = ({ onOpenCreateFolder, onUploadFiles }) => {
   const { user } = useApp()
   const fileInputRef = useRef(null)
 
-  const storageUsed = user?.storage_used || 423685120 // ~404 MB
-  const storageLimit = user?.storage_limit || 1073741824 // 1 GB
-  const percentage = Math.round((storageUsed / storageLimit) * 100)
+  const storageUsed = user?.storage_used !== undefined ? Number(user.storage_used) : 0
+  const storageLimit = user?.storage_limit ? Number(user.storage_limit) : 1073741824
+  const percentage = Math.min(100, Math.round((storageUsed / storageLimit) * 100))
 
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files)
