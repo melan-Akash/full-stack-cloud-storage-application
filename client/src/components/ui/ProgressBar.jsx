@@ -10,3 +10,5 @@ export function ProgressBar({ progress = 0, className = "", color = "bg-orange-6
         </div>
     );
 }
+
+export default ProgressBar;

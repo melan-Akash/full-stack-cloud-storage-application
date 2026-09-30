@@ -26,3 +26,5 @@ export function Input({ label, error, icon: Icon, className = "", type = "text",
         </div>
     );
 }
+
+export default Input;

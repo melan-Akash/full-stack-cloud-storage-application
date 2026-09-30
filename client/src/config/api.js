@@ -423,7 +423,51 @@ api.defaults.adapter = async (config) => {
     else if (pathname === "/api/trash" && method === "get") {
         const files = getFiles().filter((f) => f.is_trashed);
         const folders = getFolders().filter((f) => f.is_trashed);
-        responseData = { files, folders };
+        const items = [
+            ...folders.map((f) => ({ ...f, isFolder: true, deletedAt: f.trashed_at || f.updated_at || new Date().toISOString() })),
+            ...files.map((f) => ({ ...f, isFolder: false, deletedAt: f.trashed_at || f.updated_at || new Date().toISOString() })),
+        ];
+        responseData = { files, folders, items };
+    } else if (pathname === "/api/trash/restore" && (method === "post" || method === "patch")) {
+        const id = body.id;
+        const isFolder = body.isFolder;
+        if (isFolder) {
+            const folders = getFolders();
+            const idx = folders.findIndex((f) => f.id === id);
+            if (idx !== -1) {
+                folders[idx].is_trashed = false;
+                folders[idx].trashed_at = null;
+                saveFolders(folders);
+            }
+        } else {
+            const files = getFiles();
+            const idx = files.findIndex((f) => f.id === id);
+            if (idx !== -1) {
+                files[idx].is_trashed = false;
+                files[idx].trashed_at = null;
+                saveFiles(files);
+            }
+        }
+        responseData = { message: "Item restored successfully" };
+    } else if (pathname === "/api/trash/permanent" && method === "delete") {
+        const id = body.id;
+        const isFolder = body.isFolder;
+        if (isFolder) {
+            const folders = getFolders();
+            saveFolders(folders.filter((f) => f.id !== id));
+        } else {
+            const files = getFiles();
+            const found = files.find((f) => f.id === id);
+            saveFiles(files.filter((f) => f.id !== id));
+            if (found) {
+                const user = getUser();
+                if (user) {
+                    user.storage_used = Math.max(0, (Number(user.storage_used) || 0) - Number(found.size || 0));
+                    saveUser(user);
+                }
+            }
+        }
+        responseData = { message: "Item permanently deleted" };
     } else if (pathname === "/api/trash/empty" && (method === "post" || method === "delete")) {
         const activeFiles = getFiles().filter((f) => !f.is_trashed);
         const activeFolders = getFolders().filter((f) => !f.is_trashed);
@@ -442,7 +486,7 @@ api.defaults.adapter = async (config) => {
     }
 
     // 5. SHARE ROUTES
-    else if (pathname === "/api/shares" && method === "get") {
+    else if ((pathname === "/api/shares" || pathname === "/api/share/my-links") && method === "get") {
         const shares = getShares();
         const files = getFiles();
         const folders = getFolders();
@@ -481,17 +525,20 @@ api.defaults.adapter = async (config) => {
                         }
                     }
                 }
+                const itemName = resource?.name || (s.resource_type === "folder" ? "Shared Folder" : "Shared File");
                 return {
                     ...s,
+                    itemName,
+                    createdAt: s.created_at,
                     resource: resource || {
                         id: s.resource_id,
-                        name: s.resource_type === "folder" ? "Shared Folder" : "Shared File",
+                        name: itemName,
                         mime_type: s.resource_type === "folder" ? null : "application/octet-stream",
                     },
                 };
             });
 
-        responseData = { share_links: enriched, shares: enriched };
+        responseData = { share_links: enriched, shares: enriched, links: enriched };
     } else if (pathname === "/api/shares" && method === "post") {
         const shares = getShares();
         const files = getFiles();
@@ -531,12 +578,18 @@ api.defaults.adapter = async (config) => {
             responseData = { share: newShare, share_link: newShare, is_existing: false };
             status = 201;
         }
-    } else if (pathname.match(/^\/api\/shares\/[^/]+$/) && method === "delete") {
+    } else if ((pathname.match(/^\/api\/shares\/[^/]+$/) || pathname.match(/^\/api\/share\/[^/]+$/)) && method === "delete") {
         const id = pathname.split("/").pop();
         const shares = getShares();
         saveShares(shares.filter((s) => s.id !== id));
         responseData = { message: "Share link revoked" };
-    } else if (pathname.match(/^\/api\/shares\/access\/[^/]+$/) && method === "get") {
+    } else if (pathname.match(/^\/api\/share\/download\/[^/]+$/) && method === "get") {
+        const token = pathname.split("/").pop();
+        const shares = getShares();
+        const share = shares.find((s) => s.token === token);
+        const fileName = share?.resource?.name || "downloaded-file.txt";
+        responseData = `Sample downloaded file content for: ${fileName}\nCreated with Drivea Cloud Storage.`;
+    } else if ((pathname.match(/^\/api\/shares\/access\/[^/]+$/) || pathname.match(/^\/api\/share\/public\/[^/]+$/)) && method === "get") {
         const token = pathname.split("/").pop();
         const shares = getShares();
         const share = shares.find((s) => s.token === token);
@@ -551,6 +604,8 @@ api.defaults.adapter = async (config) => {
                 responseData = {
                     share,
                     file,
+                    item: file,
+                    createdAt: share.created_at,
                     preview_url: previewUrl,
                     url: previewUrl,
                     resource_type: "file",
@@ -563,6 +618,8 @@ api.defaults.adapter = async (config) => {
                 responseData = {
                     share,
                     folder,
+                    item: folder,
+                    createdAt: share.created_at,
                     files: folderFiles,
                     resource_type: "folder",
                     permission: share.permission,

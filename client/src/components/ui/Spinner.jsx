@@ -9,3 +9,5 @@ export function Spinner({ size = "md", className = "text-orange-500" }) {
 
     return <Loader2Icon className={`animate-spin ${sizes[size]} ${className}`} />;
 }
+
+export default Spinner;
