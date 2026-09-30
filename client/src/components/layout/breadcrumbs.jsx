@@ -14,8 +14,8 @@ const Breadcrumbs = ({ currentFolderId, folderName }) => {
       </Link>
       {folderName && (
         <>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
-          <span className="px-3.5 py-1.5 rounded-full bg-slate-100 text-xs sm:text-sm font-medium text-slate-800">
+          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="px-3 py-1.5 rounded-full bg-slate-100 text-xs sm:text-sm font-medium text-slate-800 max-w-[130px] sm:max-w-xs truncate inline-block" title={folderName}>
             {folderName}
           </span>
         </>

@@ -1,10 +1,10 @@
 import React from 'react'
-import { Search, ArrowUpDown, LogOut } from 'lucide-react'
+import { Search, ArrowUpDown, LogOut, Menu } from 'lucide-react'
 import { useApp } from '../../context/appContext'
 import { SORT_OPTIONS } from '../../assets/assets'
 import Dropdown, { DropdownItem } from '../ui/Dropdown'
 
-const Header = () => {
+const Header = ({ onToggleMobileSidebar }) => {
   const { user, logout, searchQuery, setSearchQuery, sortBy, setSortBy } = useApp()
 
   const currentSortLabel =
@@ -13,11 +13,20 @@ const Header = () => {
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'A'
 
   return (
-    <header className="h-16 px-6 bg-white border-b border-slate-200/80 flex items-center justify-between gap-4 sticky top-0 z-30">
-      {/* Search Input Bar */}
-      <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+    <header className="h-16 px-4 sm:px-6 bg-white border-b border-slate-200/80 flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-30">
+      {/* Left: Mobile Hamburger Toggle + Search Bar */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl min-w-0">
+        <button
+          type="button"
+          onClick={onToggleMobileSidebar}
+          className="p-2 -ml-1 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 md:hidden shrink-0 transition"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="relative flex-1 min-w-0">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -25,7 +34,7 @@ const Header = () => {
             placeholder="Search files and folders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-100/70 border border-slate-200/60 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white focus:ring-1 focus:ring-orange-500 transition duration-150"
+            className="w-full bg-slate-100/70 border border-slate-200/60 rounded-xl pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white focus:ring-1 focus:ring-orange-500 transition duration-150"
           />
         </div>
       </div>

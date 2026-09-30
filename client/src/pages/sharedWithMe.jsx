@@ -101,7 +101,7 @@ const SharedWithMe = () => {
           </div>
 
           <div>
-            <h3 className="text-xl font-bold text-slate-900 break-words">{item?.name || 'Shared Item'}</h3>
+            <h3 className="text-xl font-bold text-slate-900 wrap-break-word">{item?.name || 'Shared Item'}</h3>
             <p className="text-slate-500 text-sm mt-1">
               Shared with you via public link
             </p>

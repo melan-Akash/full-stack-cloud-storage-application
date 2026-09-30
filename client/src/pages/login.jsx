@@ -39,7 +39,7 @@ const Login = ({ mode = 'login' }) => {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white selection:bg-orange-500 selection:text-white">
       {/* Left Hero Brand Panel */}
-      <div className="relative md:w-1/2 min-h-115 md:min-h-screen p-8 sm:p-12 lg:p-20 flex flex-col justify-between overflow-hidden bg-[#faf7f4]">
+      <div className="relative md:w-1/2 p-6 sm:p-12 lg:p-20 flex flex-col justify-between overflow-hidden bg-[#faf7f4]">
         {/* Subtle radial glows */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-[radial-gradient(circle_at_0%_0%,rgba(254,215,170,0.5)_0%,rgba(255,247,237,0.3)_45%,transparent_70%)]" />
         <div className="absolute bottom-0 right-0 w-full h-full pointer-events-none bg-[radial-gradient(circle_at_100%_100%,rgba(254,215,170,0.3)_0%,transparent_60%)]" />
@@ -56,18 +56,18 @@ const Login = ({ mode = 'login' }) => {
         {/* Top: Brand Logo */}
         <div className="relative z-10 flex items-center gap-2.5">
           <img src="/logo.svg" alt="Drivea Logo" className="h-6 w-auto" />
-          <span className="text-xl font-bold tracking-widest text-slate-900 uppercase">
+          <span className="text-lg sm:text-xl font-bold tracking-widest text-slate-900 uppercase">
             DRIVEA
           </span>
         </div>
 
         {/* Center: Hero Heading & Description */}
-        <div className="relative z-10 my-auto py-12 max-w-lg">
-          <h1 className="text-4xl sm:text-5xl font-medium tracking-tight text-slate-900 leading-[1.18]">
+        <div className="relative z-10 my-4 sm:my-auto py-4 sm:py-12 max-w-lg">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-medium tracking-tight text-slate-900 leading-[1.2]">
             Secure, Simple &amp; Fast <br />
             <span className="text-orange-600 font-normal">Cloud Storage.</span>
           </h1>
-          <p className="mt-5 text-slate-500 text-sm sm:text-base leading-relaxed max-w-sm">
+          <p className="mt-3 sm:mt-5 text-slate-500 text-xs sm:text-sm lg:text-base leading-relaxed max-w-sm">
             Store your files securely in our drive, organize into folders, share with permissions and access anywhere.
           </p>
         </div>

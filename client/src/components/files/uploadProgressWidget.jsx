@@ -33,7 +33,7 @@ const UploadProgressWidget = ({ uploadStatus, onClose }) => {
   } = uploadStatus
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-bottom-5 duration-300">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-96 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-bottom-5 duration-300">
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden transition-all duration-200 text-slate-800">
         {/* Top Header Bar */}
         <div
@@ -97,7 +97,7 @@ const UploadProgressWidget = ({ uploadStatus, onClose }) => {
                 ? 'bg-emerald-500'
                 : error
                 ? 'bg-red-500'
-                : 'bg-gradient-to-r from-orange-500 to-amber-500'
+                : 'bg-linear-to-r from-orange-500 to-amber-500'
             }`}
             style={{ width: `${percent}%` }}
           />
@@ -151,7 +151,7 @@ const UploadProgressWidget = ({ uploadStatus, onClose }) => {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="shrink-0">{getFileIcon(file.mime_type, 'w-4 h-4')}</div>
-                      <span className="truncate font-medium text-slate-800 max-w-[180px]">
+                      <span className="truncate font-medium text-slate-800 max-w-45">
                         {file.name}
                       </span>
                     </div>
