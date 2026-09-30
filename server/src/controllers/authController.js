@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { pool } from '../config/db.js'
+import { sendWelcomeEmail } from '../services/emailService.js'
 
 // Register User
 export const register = async (req, res) => {
@@ -35,6 +36,11 @@ export const register = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+
+    // Send welcome email asynchronously in background
+    sendWelcomeEmail({ name: user.name, email: user.email }).catch((err) => {
+      console.warn('[AuthController] Non-blocking email sending error:', err?.message || err)
     })
 
     res.status(201).json({ user, token })
