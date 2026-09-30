@@ -77,6 +77,17 @@ export const AppProvider = ({ children }) => {
     }
   }
 
+  const refreshUser = async () => {
+    try {
+      const { data } = await API.get('/api/auth/me')
+      if (data?.user) {
+        setUser(data.user)
+      }
+    } catch (error) {
+      // ignore
+    }
+  }
+
   const value = {
     user,
     setUser,
@@ -88,6 +99,7 @@ export const AppProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
   }
 
   return (

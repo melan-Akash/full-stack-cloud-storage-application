@@ -6,21 +6,70 @@ import { useApp } from '../context/appContext'
 export const useDrive = (initialFolderId = null) => {
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
+  const [currentFolder, setCurrentFolder] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const { sortBy } = useApp()
+  const { sortBy, refreshUser } = useApp()
+
+  const [uploadStatus, setUploadStatus] = useState({
+    isUploading: false,
+    percent: 0,
+    speed: '0 KB/s',
+    remainingTime: '',
+    uploadedBytes: 0,
+    totalBytes: 0,
+    filesCount: 0,
+    fileNames: [],
+    isSuccess: false,
+    error: null,
+  })
+
+  const resetUploadStatus = useCallback(() => {
+    setUploadStatus({
+      isUploading: false,
+      percent: 0,
+      speed: '0 KB/s',
+      remainingTime: '',
+      uploadedBytes: 0,
+      totalBytes: 0,
+      filesCount: 0,
+      fileNames: [],
+      isSuccess: false,
+      error: null,
+    })
+  }, [])
 
   const fetchDriveData = useCallback(async (folderId = initialFolderId) => {
     setIsLoading(true)
     try {
       const parentId = folderId || null
-      const [foldersRes, filesRes] = await Promise.all([
-        API.get('/api/folders', { params: { parent_id: parentId } }),
-        API.get('/api/files', { params: { folder_id: parentId, sort: sortBy } }),
-      ])
+      let fetchedFolders = []
+      let fetchedFiles = []
+      let folderInfo = null
 
-      const fetchedFolders = foldersRes?.data?.folders || []
-      const fetchedFiles = filesRes?.data?.files || []
+      if (parentId) {
+        try {
+          const res = await API.get(`/api/folders/${parentId}`)
+          folderInfo = res.data?.folder || null
+          fetchedFolders = res.data?.folders || []
+          fetchedFiles = res.data?.files || []
+        } catch {
+          const [foldersRes, filesRes] = await Promise.all([
+            API.get('/api/folders', { params: { parent_id: parentId } }),
+            API.get('/api/files', { params: { folder_id: parentId, sort: sortBy } }),
+          ])
+          fetchedFolders = foldersRes?.data?.folders || []
+          fetchedFiles = filesRes?.data?.files || []
+        }
+      } else {
+        const [foldersRes, filesRes] = await Promise.all([
+          API.get('/api/folders', { params: { parent_id: null } }),
+          API.get('/api/files', { params: { folder_id: null, sort: sortBy } }),
+        ])
+        fetchedFolders = foldersRes?.data?.folders || []
+        fetchedFiles = filesRes?.data?.files || []
+      }
 
+      setCurrentFolder(folderInfo)
       setFolders(fetchedFolders)
       setFiles(fetchedFiles)
     } catch (error) {
@@ -30,19 +79,118 @@ export const useDrive = (initialFolderId = null) => {
     }
   }, [initialFolderId, sortBy])
 
+
   const uploadFiles = async (selectedFiles, folderId = initialFolderId) => {
+    if (!selectedFiles || selectedFiles.length === 0) return
+
+    const filesArray = Array.from(selectedFiles)
+    const totalSize = filesArray.reduce((acc, f) => acc + (f.size || 0), 0)
+    const fileNames = filesArray.map((f) => ({
+      name: f.name,
+      size: f.size,
+      mime_type: f.type,
+    }))
+
+    const startTime = performance.now()
+    let lastLoaded = 0
+    let lastTime = startTime
+
+    setUploadStatus({
+      isUploading: true,
+      percent: 0,
+      speed: 'Starting...',
+      remainingTime: '',
+      uploadedBytes: 0,
+      totalBytes: totalSize,
+      filesCount: filesArray.length,
+      fileNames,
+      isSuccess: false,
+      error: null,
+    })
+
     try {
       const formData = new FormData()
       formData.append('folder_id', folderId || '')
-      selectedFiles.forEach((f) => formData.append('files', f))
+      filesArray.forEach((f) => formData.append('files', f))
 
       await API.post('/api/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const { loaded, total } = progressEvent
+          const currentTotal = total || totalSize
+          const currentPercent = currentTotal > 0 ? Math.min(99, Math.round((loaded * 100) / currentTotal)) : 0
+
+          const currentTime = performance.now()
+          const timeDiff = (currentTime - lastTime) / 1000 // in seconds
+
+          let currentSpeed = ''
+          let remainingStr = ''
+
+          if (timeDiff >= 0.25 || loaded === currentTotal) {
+            const bytesDiff = loaded - lastLoaded
+            const speedBytesPerSec = timeDiff > 0 ? bytesDiff / timeDiff : 0
+
+            if (speedBytesPerSec > 1024 * 1024) {
+              currentSpeed = `${(speedBytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`
+            } else if (speedBytesPerSec > 1024) {
+              currentSpeed = `${(speedBytesPerSec / 1024).toFixed(0)} KB/s`
+            } else if (speedBytesPerSec > 0) {
+              currentSpeed = `${Math.round(speedBytesPerSec)} B/s`
+            }
+
+            const remainingBytes = currentTotal - loaded
+            if (speedBytesPerSec > 0 && remainingBytes > 0) {
+              const secondsLeft = Math.ceil(remainingBytes / speedBytesPerSec)
+              if (secondsLeft >= 60) {
+                const mins = Math.floor(secondsLeft / 60)
+                const secs = secondsLeft % 60
+                remainingStr = `~${mins}m ${secs}s left`
+              } else {
+                remainingStr = `~${secondsLeft}s left`
+              }
+            }
+
+            lastLoaded = loaded
+            lastTime = currentTime
+          }
+
+          setUploadStatus((prev) => ({
+            ...prev,
+            percent: currentPercent,
+            speed: currentSpeed || prev.speed,
+            remainingTime: remainingStr || prev.remainingTime,
+            uploadedBytes: loaded,
+            totalBytes: currentTotal,
+          }))
+        },
       })
-      toast.success('Files uploaded successfully!')
+
+      setUploadStatus((prev) => ({
+        ...prev,
+        isUploading: false,
+        percent: 100,
+        speed: 'Completed',
+        remainingTime: '',
+        isSuccess: true,
+      }))
+
+      toast.success(`${filesArray.length} file${filesArray.length > 1 ? 's' : ''} uploaded successfully!`)
       fetchDriveData(folderId)
+      if (refreshUser) refreshUser()
+
+      // Auto dismiss success card after 4.5 seconds
+      setTimeout(() => {
+        setUploadStatus((prev) => (prev.isSuccess ? { ...prev, isSuccess: false } : prev))
+      }, 4500)
     } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to upload files')
+      const errMsg = error?.response?.data?.error || 'Failed to upload files'
+      toast.error(errMsg)
+      setUploadStatus((prev) => ({
+        ...prev,
+        isUploading: false,
+        percent: 0,
+        error: errMsg,
+      }))
     }
   }
 
@@ -89,6 +237,7 @@ export const useDrive = (initialFolderId = null) => {
       await API.delete(endpoint)
       toast.success('Moved to trash')
       fetchDriveData(initialFolderId)
+      if (refreshUser) refreshUser()
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to delete item')
     }
@@ -113,9 +262,12 @@ export const useDrive = (initialFolderId = null) => {
   return {
     folders,
     files,
+    currentFolder,
     isLoading,
     fetchDriveData,
     uploadFiles,
+    uploadStatus,
+    resetUploadStatus,
     createFolder,
     renameItem,
     moveItem,

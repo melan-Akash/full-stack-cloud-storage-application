@@ -10,18 +10,23 @@ import RenameModal from '../components/files/renameModal'
 import MoveModal from '../components/files/moveModal'
 import ShareModal from '../components/files/shareModal'
 import FilePreview from '../components/files/filePreview'
+import DragDropZone from '../components/files/dragDropZone'
+import UploadProgressWidget from '../components/files/uploadProgressWidget'
 import { useApp } from '../context/appContext'
 import { useDrive } from '../hooks/useDrive'
 
 const Drive = () => {
   const { folderId } = useParams()
-  const { searchQuery, sortBy } = useApp()
+  const { searchQuery } = useApp()
   const {
     folders,
     files,
+    currentFolder,
     isLoading,
     fetchDriveData,
     uploadFiles,
+    uploadStatus,
+    resetUploadStatus,
     createFolder,
     renameItem,
     moveItem,
@@ -44,6 +49,7 @@ const Drive = () => {
     const selectedFiles = Array.from(e.target.files)
     if (selectedFiles.length > 0) {
       uploadFiles(selectedFiles, folderId)
+      e.target.value = '' // reset input for subsequent selections
     }
   }
 
@@ -57,111 +63,123 @@ const Drive = () => {
   )
 
   const isEmpty = !isLoading && filteredFolders.length === 0 && filteredFiles.length === 0
+  const currentFolderName = currentFolder?.name || 'My Drive'
 
   return (
-    <div className="space-y-6">
-      {/* Top Action Header Bar with Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
-        <Breadcrumbs currentFolderId={folderId} />
+    <DragDropZone
+      onDropFiles={(dropped) => uploadFiles(dropped, folderId)}
+      folderName={currentFolderName}
+    >
+      <div className="space-y-6">
+        {/* Top Action Header Bar with Breadcrumbs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+          <Breadcrumbs currentFolderId={folderId} folderName={currentFolder?.name} />
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsCreateFolderOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
-          >
-            <FolderPlus className="w-4 h-4 text-slate-500" />
-            <span>New Folder</span>
-          </button>
-
-          <label className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-white bg-orange-600 rounded-xl hover:bg-orange-700 transition-colors cursor-pointer shadow-2xs">
-            <Upload className="w-4 h-4" />
-            <span>Upload Files</span>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Drive Main Content View */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-          <Spinner size="lg" />
-          <p className="mt-3 text-sm font-medium text-slate-500">Loading your files...</p>
-        </div>
-      ) : isEmpty ? (
-        <EmptyState
-          title={searchQuery ? 'No matching files found' : 'This folder is empty'}
-          description={
-            searchQuery
-              ? 'Try adjusting your search query'
-              : 'Upload files or create a new folder to get started'
-          }
-          action={
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setIsCreateFolderOpen(true)}
-              className="mt-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
             >
-              Create Folder
+              <FolderPlus className="w-4 h-4 text-slate-500" />
+              <span>New Folder</span>
             </button>
-          }
-        />
-      ) : (
-        <FileGrid
-          folders={filteredFolders}
-          files={filteredFiles}
-          onRename={(item) => setSelectedItemForRename(item)}
-          onMove={(item) => setSelectedItemForMove(item)}
-          onShare={(item) => setSelectedItemForShare(item)}
-          onDelete={(item) => deleteItem(item)}
-          onPreview={(file) => setPreviewFile(file)}
-        />
-      )}
 
-      {/* Action Modals */}
-      {isCreateFolderOpen && (
-        <CreateFolderModal
-          isOpen={isCreateFolderOpen}
-          onClose={() => setIsCreateFolderOpen(false)}
-          onCreate={(name) => createFolder(name, folderId)}
-        />
-      )}
+            <label className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-white bg-orange-600 rounded-xl hover:bg-orange-700 transition-colors cursor-pointer shadow-2xs active:scale-[0.98]">
+              <Upload className="w-4 h-4" />
+              <span>Upload Files</span>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
 
-      {selectedItemForRename && (
-        <RenameModal
-          item={selectedItemForRename}
-          onClose={() => setSelectedItemForRename(null)}
-          onRename={(id, newName, isFolder) => renameItem(id, newName, isFolder)}
-        />
-      )}
+        {/* Drive Main Content View */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+            <Spinner size="lg" />
+            <p className="mt-3 text-sm font-medium text-slate-500">Loading your files...</p>
+          </div>
+        ) : isEmpty ? (
+          <EmptyState
+            title={searchQuery ? 'No matching files found' : 'This folder is empty'}
+            description={
+              searchQuery
+                ? 'Try adjusting your search query'
+                : 'Drag and drop files here, or click Upload Files to get started'
+            }
+            action={
+              <button
+                onClick={() => setIsCreateFolderOpen(true)}
+                className="mt-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition"
+              >
+                Create Folder
+              </button>
+            }
+          />
+        ) : (
+          <FileGrid
+            folders={filteredFolders}
+            files={filteredFiles}
+            onRename={(item) => setSelectedItemForRename(item)}
+            onMove={(item) => setSelectedItemForMove(item)}
+            onShare={(item) => setSelectedItemForShare(item)}
+            onDelete={(item) => deleteItem(item)}
+            onPreview={(file) => setPreviewFile(file)}
+          />
+        )}
 
-      {selectedItemForMove && (
-        <MoveModal
-          item={selectedItemForMove}
-          currentFolderId={folderId}
-          onClose={() => setSelectedItemForMove(null)}
-          onMove={(id, targetFolderId, isFolder) => moveItem(id, targetFolderId, isFolder)}
-        />
-      )}
+        {/* Action Modals */}
+        {isCreateFolderOpen && (
+          <CreateFolderModal
+            isOpen={isCreateFolderOpen}
+            onClose={() => setIsCreateFolderOpen(false)}
+            onCreate={(name) => createFolder(name, folderId)}
+          />
+        )}
 
-      {selectedItemForShare && (
-        <ShareModal
-          item={selectedItemForShare}
-          onClose={() => setSelectedItemForShare(null)}
-          onShare={(id, config) => shareItem(id, config)}
-        />
-      )}
+        {selectedItemForRename && (
+          <RenameModal
+            item={selectedItemForRename}
+            onClose={() => setSelectedItemForRename(null)}
+            onRename={(id, newName, isFolder) => renameItem(id, newName, isFolder)}
+          />
+        )}
 
-      {previewFile && (
-        <FilePreview
-          file={previewFile}
-          onClose={() => setPreviewFile(null)}
+        {selectedItemForMove && (
+          <MoveModal
+            item={selectedItemForMove}
+            currentFolderId={folderId}
+            onClose={() => setSelectedItemForMove(null)}
+            onMove={(id, targetFolderId, isFolder) => moveItem(id, targetFolderId, isFolder)}
+          />
+        )}
+
+        {selectedItemForShare && (
+          <ShareModal
+            item={selectedItemForShare}
+            onClose={() => setSelectedItemForShare(null)}
+            onShare={(id, config) => shareItem(id, config)}
+          />
+        )}
+
+        {previewFile && (
+          <FilePreview
+            file={previewFile}
+            onClose={() => setPreviewFile(null)}
+          />
+        )}
+
+        {/* Live Upload Progress Floating Widget (Bottom-Right) */}
+        <UploadProgressWidget
+          uploadStatus={uploadStatus}
+          onClose={resetUploadStatus}
         />
-      )}
-    </div>
+      </div>
+    </DragDropZone>
   )
 }
 
