@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { FolderPlus, Upload } from 'lucide-react'
+import { FolderPlus, Upload, LayoutGrid, List } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import Breadcrumbs from '../components/layout/breadcrumbs'
 import FileGrid from '../components/files/fileGrid'
+import FileTable from '../components/files/fileTable'
+import BulkActionBar from '../components/files/bulkActionBar'
 import EmptyState from '../components/ui/EmptyState'
 import Spinner from '../components/ui/Spinner'
 import CreateFolderModal from '../components/folders/createFolderModal'
@@ -17,7 +20,7 @@ import { useDrive } from '../hooks/useDrive'
 
 const Drive = () => {
   const { folderId } = useParams()
-  const { searchQuery } = useApp()
+  const { searchQuery, viewMode, setViewMode, toggleStar } = useApp()
   const {
     folders,
     files,
@@ -34,7 +37,8 @@ const Drive = () => {
     shareItem,
   } = useDrive(folderId)
 
-  // Modal State Management
+  // Selection & Modal State Management
+  const [selectedIds, setSelectedIds] = useState([])
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
   const [selectedItemForRename, setSelectedItemForRename] = useState(null)
   const [selectedItemForMove, setSelectedItemForMove] = useState(null)
@@ -43,6 +47,7 @@ const Drive = () => {
 
   useEffect(() => {
     fetchDriveData(folderId)
+    setSelectedIds([]) // clear selection when changing folders
   }, [folderId, fetchDriveData])
 
   const handleFileUpload = (e) => {
@@ -62,6 +67,44 @@ const Drive = () => {
     f.name.toLowerCase().includes((searchQuery || '').toLowerCase())
   )
 
+  const allVisibleItems = [...filteredFolders, ...filteredFiles]
+  const isAllSelected = allVisibleItems.length > 0 && selectedIds.length === allVisibleItems.length
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(allVisibleItems.map((item) => item.id))
+    }
+  }
+
+  const selectedObjects = allVisibleItems.filter((item) => selectedIds.includes(item.id))
+
+  const handleBulkDelete = async () => {
+    if (selectedObjects.length === 0) return
+    const toastId = toast.loading(`Moving ${selectedObjects.length} items to trash...`)
+    try {
+      for (const item of selectedObjects) {
+        await deleteItem(item)
+      }
+      setSelectedIds([])
+      toast.success('Selected items moved to trash', { id: toastId })
+    } catch {
+      toast.error('Failed to delete some items', { id: toastId })
+    }
+  }
+
+  const handleBulkStar = () => {
+    selectedIds.forEach((id) => toggleStar(id))
+    setSelectedIds([])
+  }
+
   const isEmpty = !isLoading && filteredFolders.length === 0 && filteredFiles.length === 0
   const currentFolderName = currentFolder?.name || 'My Drive'
 
@@ -71,11 +114,41 @@ const Drive = () => {
       folderName={currentFolderName}
     >
       <div className="space-y-6">
-        {/* Top Action Header Bar with Breadcrumbs */}
+        {/* Top Action Header Bar with Breadcrumbs & View Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <Breadcrumbs currentFolderId={folderId} folderName={currentFolder?.name} />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* View Mode Toggle Switcher */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden md:inline">Grid</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${
+                  viewMode === 'list'
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="List (Table) View"
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden md:inline">List</span>
+              </button>
+            </div>
+
             <button
               onClick={() => setIsCreateFolderOpen(true)}
               className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
@@ -120,10 +193,26 @@ const Drive = () => {
               </button>
             }
           />
+        ) : viewMode === 'list' ? (
+          <FileTable
+            folders={filteredFolders}
+            files={filteredFiles}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
+            isAllSelected={isAllSelected}
+            onRename={(item) => setSelectedItemForRename(item)}
+            onMove={(item) => setSelectedItemForMove(item)}
+            onShare={(item) => setSelectedItemForShare(item)}
+            onDelete={(item) => deleteItem(item)}
+            onPreview={(file) => setPreviewFile(file)}
+          />
         ) : (
           <FileGrid
             folders={filteredFolders}
             files={filteredFiles}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
             onRename={(item) => setSelectedItemForRename(item)}
             onMove={(item) => setSelectedItemForMove(item)}
             onShare={(item) => setSelectedItemForShare(item)}
@@ -131,6 +220,21 @@ const Drive = () => {
             onPreview={(file) => setPreviewFile(file)}
           />
         )}
+
+        {/* Floating Bulk Action Bar */}
+        <BulkActionBar
+          selectedItems={selectedObjects}
+          onClearSelection={() => setSelectedIds([])}
+          onSelectAll={handleSelectAll}
+          isAllSelected={isAllSelected}
+          onDeleteSelected={handleBulkDelete}
+          onMoveSelected={
+            selectedObjects.length === 1
+              ? () => setSelectedItemForMove(selectedObjects[0])
+              : undefined
+          }
+          onStarSelected={handleBulkStar}
+        />
 
         {/* Action Modals */}
         {isCreateFolderOpen && (

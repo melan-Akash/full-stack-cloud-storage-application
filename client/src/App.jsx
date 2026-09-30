@@ -7,6 +7,8 @@ import Drive from './pages/drive'
 import SharedFiles from './pages/shared'
 import SharedWithMe from './pages/sharedWithMe'
 import Trash from './pages/trash'
+import Starred from './pages/starred'
+import Recent from './pages/recent'
 
 import ProtectedRoute from './components/auth/protectedRoute'
 import DashboardLayout from './components/layout/dashboardLayout'
@@ -31,6 +33,8 @@ const App = () => {
         >
           <Route path="/" element={<Drive />} />
           <Route path="/drive/:folderId" element={<Drive />} />
+          <Route path="/recent" element={<Recent />} />
+          <Route path="/starred" element={<Starred />} />
           <Route path="/shared" element={<SharedFiles />} />
           <Route path="/trash" element={<Trash />} />
         </Route>

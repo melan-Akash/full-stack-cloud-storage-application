@@ -9,6 +9,39 @@ export const AppProvider = ({ children }) => {
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('name_asc')
+  const [viewMode, setViewModeState] = useState(() => {
+    return localStorage.getItem('drivea_view_mode') || 'grid'
+  })
+
+  const setViewMode = (mode) => {
+    setViewModeState(mode)
+    localStorage.setItem('drivea_view_mode', mode)
+  }
+
+  const [starredIds, setStarredIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drivea_starred')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
+
+  const toggleStar = (id) => {
+    setStarredIds((prev) => {
+      const isAlready = prev.includes(id)
+      const next = isAlready ? prev.filter((item) => item !== id) : [...prev, id]
+      localStorage.setItem('drivea_starred', JSON.stringify(next))
+      if (isAlready) {
+        toast.success('Removed from Starred')
+      } else {
+        toast.success('Added to Starred')
+      }
+      return next
+    })
+  }
+
+  const isStarred = (id) => starredIds.includes(id)
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -100,6 +133,11 @@ export const AppProvider = ({ children }) => {
     register,
     logout,
     refreshUser,
+    viewMode,
+    setViewMode,
+    starredIds,
+    toggleStar,
+    isStarred,
   }
 
   return (

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { HardDrive, Users, Trash2, Plus, FolderPlus, Upload } from 'lucide-react'
+import { HardDrive, Users, Trash2, Plus, FolderPlus, Upload, Clock, Star } from 'lucide-react'
 import { useApp } from '../../context/appContext'
 import { formatBytes } from '../../assets/assets'
 import ProgressBar from '../ui/ProgressBar'
@@ -23,6 +23,8 @@ const Sidebar = ({ onOpenCreateFolder, onUploadFiles }) => {
 
   const navItems = [
     { name: 'My Drive', path: '/', icon: HardDrive, exact: true },
+    { name: 'Recent', path: '/recent', icon: Clock },
+    { name: 'Starred', path: '/starred', icon: Star },
     { name: 'Shared Files', path: '/shared', icon: Users },
     { name: 'Trash', path: '/trash', icon: Trash2 },
   ]
