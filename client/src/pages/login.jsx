@@ -72,9 +72,18 @@ const Login = ({ mode = 'login' }) => {
           </p>
         </div>
 
-        {/* Bottom: Copyright */}
+        {/* Bottom: Copyright & Portfolio Link */}
         <div className="relative z-10 text-xs text-slate-400">
-          © 2026 GreatStack. All rights reserved.
+          © {new Date().getFullYear()}{' '}
+          <a
+            href="https://melanakash.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-orange-600 transition-colors font-medium underline underline-offset-2"
+          >
+            Melan Akash
+          </a>
+          . All rights reserved.
         </div>
       </div>
 

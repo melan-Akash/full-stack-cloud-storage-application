@@ -126,6 +126,18 @@ const Sidebar = ({ onOpenCreateFolder, onUploadFiles }) => {
         <p className="mt-2 text-xs text-slate-400">
           {formatBytes(storageUsed)} of {formatBytes(storageLimit)} used
         </p>
+
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Built by</span>
+          <a
+            href="https://melanakash.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-orange-600 hover:underline font-medium"
+          >
+            Melan Akash ↗
+          </a>
+        </div>
       </div>
     </aside>
   )
