@@ -13,7 +13,10 @@ router.use(protect)
 
 router.get('/', getTrashItems)
 router.post('/restore', restoreItem)
+router.patch('/restore', restoreItem)
 router.delete('/permanent', permanentlyDeleteItem)
+router.post('/permanent', permanentlyDeleteItem)
 router.delete('/empty', emptyTrash)
+router.post('/empty', emptyTrash)
 
 export default router

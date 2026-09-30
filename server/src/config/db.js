@@ -14,6 +14,7 @@ export const pool = new Pool({
 })
 
 export const sql = neon(process.env.DATABASE_URL)
+export { sql as SQL }
 
 export const initDB = async () => {
   try {

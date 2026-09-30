@@ -36,6 +36,7 @@ app.use('/api/folders', folderRoutes)
 app.use('/api/files', fileRoutes)
 app.use('/api/trash', trashRoutes)
 app.use('/api/shares', shareRoutes)
+app.use('/api/share', shareRoutes)
 
 // Base Health Route
 app.get('/', (req, res) => {

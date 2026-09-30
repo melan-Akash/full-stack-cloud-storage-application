@@ -11,7 +11,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' })
     }
 
-    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email])
+    const userExists = await pool.query('SELECT id FROM users WHERE email = $1', [email])
     if (userExists.rows.length > 0) {
       return res.status(400).json({ error: 'User already exists' })
     }
@@ -20,7 +20,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt)
 
     const newUser = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, storage_used',
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, storage_used, storage_limit, created_at',
       [name, email, hashedPassword]
     )
 
@@ -33,12 +33,13 @@ export const register = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
-    res.status(201).json({ user })
+    res.status(201).json({ user, token })
   } catch (error) {
+    console.error('Error during registration:', error)
     res.status(500).json({ error: 'Server error during registration' })
   }
 }
@@ -71,13 +72,14 @@ export const login = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     const { password: _, ...userData } = user
-    res.json({ user: userData })
+    res.json({ user: userData, token })
   } catch (error) {
+    console.error('Error during login:', error)
     res.status(500).json({ error: 'Server error during login' })
   }
 }
@@ -88,6 +90,7 @@ export const logout = async (req, res) => {
     res.clearCookie('token')
     res.json({ message: 'Logged out successfully' })
   } catch (error) {
+    console.error('Error during logout:', error)
     res.status(500).json({ error: 'Server error during logout' })
   }
 }
@@ -96,7 +99,7 @@ export const logout = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const userResult = await pool.query(
-      'SELECT id, name, email, storage_used, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, storage_used, storage_limit, created_at FROM users WHERE id = $1',
       [req.user.id]
     )
 
@@ -106,6 +109,7 @@ export const getMe = async (req, res) => {
 
     res.json({ user: userResult.rows[0] })
   } catch (error) {
+    console.error('Error fetching user profile:', error)
     res.status(500).json({ error: 'Server error fetching user profile' })
   }
 }

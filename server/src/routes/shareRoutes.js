@@ -18,6 +18,7 @@ router.get('/download/:token', downloadSharedFile)
 router.use(protect)
 router.post('/', createShareLink)
 router.get('/my-links', getMySharedLinks)
+router.get('/', getMySharedLinks)
 router.delete('/:id', revokeShareLink)
 
 export default router
