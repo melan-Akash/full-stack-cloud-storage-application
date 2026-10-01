@@ -7,16 +7,23 @@ dotenv.config()
 const { Pool } = pg
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.DATABASE_URL || '',
+  ssl: process.env.DATABASE_URL
+    ? {
+        rejectUnauthorized: false,
+      }
+    : false,
 })
 
-export const sql = neon(process.env.DATABASE_URL)
+export const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : null
 export { sql as SQL }
 
 export const initDB = async () => {
+  if (!process.env.DATABASE_URL || !sql) {
+    console.warn('[Database] Warning: DATABASE_URL is not set. Skipping table initialization.')
+    return
+  }
+
   try {
     const queries = [
       sql`
